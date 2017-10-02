@@ -107,6 +107,7 @@ EOF
     make POD2MAN=true
     make POD2MAN=true pure_install
     local facades_dir=/var/www/facades
+    rm -rf /var/www/facades
     local tgt=$facades_dir
     mkdir -p "$(dirname "$tgt")" "$tgt"
     cd "$files_dir"
