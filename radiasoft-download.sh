@@ -13,6 +13,10 @@
 #   ctd
 # bivio httpd run
 container_bop_main() {
+    local root=$1 exe_prefix=$2 app_root=$3 facade_uri=$3
+    if (( $# != 4 )); then
+        install_err 'must supply args'
+    fi
     if (( $EUID != 0 )); then
         install_err 'must be run as root'
     fi
@@ -20,20 +24,20 @@ container_bop_main() {
     install_tmp_dir
     local build_dir=$PWD
     local javascript_dir=/usr/share/Bivio-bOP-javascript
-    mkdir "$javascript_dir"
-    # No channels here, because the image gets the channel tag
-    git clone --recursive --depth 1 https://github.com/biviosoftware/javascript-Bivio
-    cd javascript-Bivio
-    bash build.sh "$javascript_dir"
-    cd ..
-    rm -rf javascript-Bivio
-    local exe_prefix=b
-    local root=Bivio
-    local facade_uri=petshop
-    local app_root=Bivio::PetShop
+    local flags=()
+    if [[ $root == Bivio ]]; then
+        mkdir "$javascript_dir"
+        # No channels here, because the image gets the channel tag
+        git clone --recursive --depth 1 https://github.com/biviosoftware/javascript-Bivio
+        cd javascript-Bivio
+        bash build.sh "$javascript_dir"
+        cd ..
+        rm -rf javascript-Bivio
+        #TODO(robnagler) move this to master when in production
+        flags=( --branch robnagler --single-branch)
+    fi
     local files_dir=${app_root//::/\/}/files
-    #TODO(robnagler) move this to master when in production
-    git clone --branch robnagler --single-branch https://github.com/biviosoftware/perl-"$root" --depth 1
+    git clone "${flags[@]}" https://github.com/biviosoftware/perl-"$root" --depth 1
     mv perl-"$root" "$root"
     perl -p -e "s{EXE_PREFIX}{$exe_prefix}g;s{ROOT}{$root}g" <<'EOF' > Makefile.PL
 use strict;
