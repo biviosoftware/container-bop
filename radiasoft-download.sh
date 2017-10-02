@@ -12,16 +12,48 @@
 #   bivio sql init_dbms
 #   ctd
 # bivio httpd run
+
 container_bop_main() {
-    local root=$1 exe_prefix=$2 app_root=$3 facade_uri=$3
-    if (( $# != 4 )); then
-        install_err 'must supply args'
+    local root=$1 exe_prefix=$2
+    local app_root=${3:-$root}
+    local facade_uri=${4:-${root,,}}
+    if (( $# < 2 )); then
+        install_err 'must supply root and exe_prefix'
     fi
-    if (( $EUID != 0 )); then
-        install_err 'must be run as root'
-    fi
-    umask 022
+    umask 077
     install_tmp_dir
+    mkdir container-conf
+    cp ~/.netrc container-conf/netrc
+    local base_image=bop
+    if [[ $root == Bivio ]]; then
+        base_image=perl
+    fi
+    {
+        echo '#!/bin/bash'
+        declare -f container_bop_build
+        cat <<EOF
+build_image_base=biviosoftware/$base_image
+build_image_name=biviosoftware/${root,,}
+build_maintainer='Bivio Software <go@bivio.biz>'
+
+build_as_root() {
+    install -m 400 \$build_guest_conf/netrc ~/.netrc
+    container_bop_build '$root' '$exe_prefix' '$app_root' '$facade_uri'
+    rm -f ~/.netrc
+}
+
+build_as_run_user() {
+    return
+}
+EOF
+    } > container-conf/build.sh
+    curl radia.run | bash -s container-build docker
+}
+
+container_bop_build() {
+    local root=$1 exe_prefix=$2 app_root=$3 facade_uri=$3
+    umask 022
+    cd "$build_guest_conf"
     local build_dir=$PWD
     local javascript_dir=/usr/share/Bivio-bOP-javascript
     local flags=()
@@ -34,7 +66,7 @@ container_bop_main() {
         cd ..
         rm -rf javascript-Bivio
         #TODO(robnagler) move this to master when in production
-        flags=( --branch robnagler --single-branch)
+        flags=( --branch robnagler --single-branch )
     fi
     local files_dir=${app_root//::/\/}/files
     git clone "${flags[@]}" https://github.com/biviosoftware/perl-"$root" --depth 1
