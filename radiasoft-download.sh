@@ -67,6 +67,18 @@ container_bop_build() {
         rm -rf javascript-Bivio
         #TODO(robnagler) move this to master when in production
         flags=( --branch robnagler --single-branch )
+        if [[ $root == Bivio ]]; then
+            cat > /etc/bivio.bconf <<'EOF'
+use Bivio::DefaultBConf;
+Bivio::DefaultBConf->merge_dir({
+    'Bivio::UI::Facade' => {
+        http_host => 'www.bivio.biz',
+        mail_host => 'bivio.biz',
+    },
+});
+EOF
+            chmod 444 /etc/bivio.bconf
+        fi
     fi
     local files_dir=${app_root//::/\/}/files
     git clone "${flags[@]}" https://github.com/biviosoftware/perl-"$root" --depth 1
