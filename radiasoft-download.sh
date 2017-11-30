@@ -24,7 +24,7 @@ container_bop_main() {
     install_tmp_dir
     mkdir container-conf
     cp ~/.netrc container-conf/netrc
-    local base_image=bop
+    local base_image=bivio
     if [[ $root == Bivio ]]; then
         base_image=perl
     fi
@@ -47,7 +47,7 @@ build_as_run_user() {
 }
 EOF
     } > container-conf/build.sh
-    curl radia.run | bash -s container-build docker
+    install_repo_eval radiasoft/containers docker
 }
 
 container_bop_build() {
@@ -149,9 +149,7 @@ $app_root::BConf->merge_dir({
     },
 });
 EOF
-        if [[ $app_root != BoulderSoftwareClub ]]; then
-            PERLLIB=$build_dir bivio project link_facade_files
-        fi
+        PERLLIB=$build_dir bivio project link_facade_files
     )
     for facade in "$facades_dir"/*; do
         if [[ ! -L $facade ]]; then
