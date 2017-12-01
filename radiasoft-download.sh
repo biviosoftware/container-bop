@@ -1,18 +1,5 @@
 #!/bin/bash
 
-# Testing
-# docker run
-#
-# docker run -u vagrant -v /var/run/postgresql/.s.PGSQL.5432:/var/run/postgresql/.s.PGSQL.5432 --rm -it --network=host biviosoftware/bop
-# . ~/.bashrc
-# export BIVIO_HOST_NAME=z50.bivio.biz BCONF=Bivio::PetShop BIVIO_HTTPD_PORT=8002 PERLLIB=~/src/perl
-# bivio dev setup
-# (cd $PERLLIB/Bivio && git checkout robnagler && rm -rf $(ls | grep -v PetShop))
-# Only the first time:
-#   bivio sql init_dbms
-#   ctd
-# bivio httpd run
-
 container_bop_main() {
     local root=$1 exe_prefix=$2
     local app_root=${3:-$root}
@@ -119,7 +106,7 @@ EOF
     make POD2MAN=true
     make POD2MAN=true pure_install
     local facades_dir=/var/www/facades
-    rm -rf /var/www/facades
+    rm -rf "$facades_dir"
     local tgt=$facades_dir
     mkdir -p "$(dirname "$tgt")" "$tgt"
     cd "$files_dir"
