@@ -108,7 +108,7 @@ EOF
     local facades_dir=/var/www/facades
     rm -rf "$facades_dir"
     local tgt=$facades_dir
-    mkdir -p "$(dirname "$tgt")" "$tgt"
+    (umask 022; mkdir -p "$(dirname "$tgt")" "$tgt")
     cd "$files_dir"
     local dirs
     if [[ -d ddl || -d plain ]]; then
@@ -144,6 +144,8 @@ EOF
             ln -s "$javascript_dir" "$facade/plain/b"
         fi
     done
+    # Apps mount subdirectories here so need to exist in the container
+    (umask 022; mkdir -p /var/log /var/db /var/bkp /var/www/html)
 }
 
 container_bop_main "${install_extra_args[@]}"
