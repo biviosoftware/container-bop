@@ -81,8 +81,7 @@ container_bop_build() {
         rm -rf javascript-Bivio
         #TODO(robnagler) move this to master when in production
         flags=( --branch robnagler --single-branch )
-        if [[ $root == Bivio ]]; then
-            cat > /etc/bivio.bconf <<'EOF'
+        cat > /etc/bivio.bconf <<'EOF'
 use Bivio::DefaultBConf;
 Bivio::DefaultBConf->merge_dir({
     'Bivio::UI::Facade' => {
@@ -91,16 +90,22 @@ Bivio::DefaultBConf->merge_dir({
     },
 });
 EOF
-            chmod 444 /etc/bivio.bconf
-        fi
+        chmod 444 /etc/bivio.bconf
     fi
     local app_d=${app_root//::/\/}
     local files_d=$app_d/files
     git clone "${flags[@]}" https://github.com/biviosoftware/perl-"$root" --depth 1
     mv perl-"$root" "$root"
+    # POSTIT: radiasoft/rsconf/rsconf/component/btest.py
     local btest_d="/usr/share/btest"
     mkdir -p "$btest_d"
-    rsync -aRv $(find "$root" -name t -prune) "$btest_d"
+    rsync -aR $(find "$root" -name t -prune) "$btest_d"
+    if [[ $root == Bivio ]]; then
+        # POSIT: radiasoft/rsconf/rsconf/package_data/btest/bivio.bconf.jinja
+        local src_d=/usr/share/Bivio-bOP-src
+        mkdir -p "$src_d"
+        rsync -aR "$root" "$src_d"
+    fi
     perl -p -e "s{EXE_PREFIX}{$exe_prefix}g;s{ROOT}{$root}g" <<'EOF' > Makefile.PL
 use strict;
 require 5.005;
