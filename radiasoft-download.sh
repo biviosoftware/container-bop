@@ -1,26 +1,53 @@
 #!/bin/bash
 
 container_bop_main() {
-    local root=$1 exe_prefix=$2
-    local app_root=${3:-$root}
-    local facade_uri=${4:-${root,,}}
-    if (( $# < 2 )); then
-        install_err 'must supply root and exe_prefix'
+    if (( $# < 1 )); then
+        install_err 'must supply Root (for perl-Root)'
     fi
+    local root=$1
+    local root_lc=${root,,}
+    local exe_prefix
+    local base_image=bivio
+    local app_root=$root
+    local facade_uri=$root_lc
+    case $1 in
+        Artisans)
+            exec_prefix=a
+            ;;
+        Bivio)
+            app_root=Bivio::PetShop
+            base_image=perl
+            exec_prefix=b
+            facade_uri=petshop
+            ;;
+        BivioOrg)
+            exec_prefix=bo
+            facade_uri=bivio.org
+            ;;
+        Sensorimotor)
+            exec_prefix=sp
+            ;;
+        Societas)
+            exec_prefix=s
+            ;;
+        Zoe)
+            exec_prefix=zoe
+            facade_uri=zoescore
+            ;;
+        *)
+            install_err "$1: unknown Perl app"
+            ;;
+    esac
     umask 077
     install_tmp_dir
     mkdir container-conf
     cp ~/.netrc container-conf/netrc
-    local base_image=bivio
-    if [[ $root == Bivio ]]; then
-        base_image=perl
-    fi
     {
         echo '#!/bin/bash'
         declare -f container_bop_build
         cat <<EOF
 build_image_base=biviosoftware/$base_image
-build_image_name=biviosoftware/${root,,}
+build_image_name=biviosoftware/${root_lc}
 build_maintainer='Bivio Software <go@bivio.biz>'
 
 build_as_root() {
@@ -38,18 +65,18 @@ EOF
 }
 
 container_bop_build() {
-    local root=$1 exe_prefix=$2 app_root=$3 facade_uri=$3
+    local root=$1 exe_prefix=$2 app_root=$3 facade_uri=$4
     umask 022
     cd "$build_guest_conf"
-    local build_dir=$PWD
-    local javascript_dir=/usr/share/Bivio-bOP-javascript
+    local build_d=$PWD
+    local javascript_d=/usr/share/Bivio-bOP-javascript
     local flags=()
     if [[ $root == Bivio ]]; then
-        mkdir "$javascript_dir"
+        mkdir "$javascript_d"
         # No channels here, because the image gets the channel tag
         git clone --recursive --depth 1 https://github.com/biviosoftware/javascript-Bivio
         cd javascript-Bivio
-        bash build.sh "$javascript_dir"
+        bash build.sh "$javascript_d"
         cd ..
         rm -rf javascript-Bivio
         #TODO(robnagler) move this to master when in production
@@ -67,9 +94,13 @@ EOF
             chmod 444 /etc/bivio.bconf
         fi
     fi
-    local files_dir=${app_root//::/\/}/files
+    local app_d=${app_root//::/\/}
+    local files_d=$app_d/files
     git clone "${flags[@]}" https://github.com/biviosoftware/perl-"$root" --depth 1
     mv perl-"$root" "$root"
+    local btest_d="/usr/share/btest"
+    mkdir -p "$btest_d"
+    rsync -aRv $(find "$app_d" -name t -prune) "$btest_d"
     perl -p -e "s{EXE_PREFIX}{$exe_prefix}g;s{ROOT}{$root}g" <<'EOF' > Makefile.PL
 use strict;
 require 5.005;
@@ -105,15 +136,16 @@ EOF
     perl Makefile.PL DESTDIR=/ INSTALLDIRS=vendor < /dev/null
     make POD2MAN=true
     make POD2MAN=true pure_install
-    local facades_dir=/var/www/facades
-    rm -rf "$facades_dir"
-    local tgt=$facades_dir
-    (umask 022; mkdir -p "$(dirname "$tgt")" "$tgt")
-    cd "$files_dir"
+    local facades_d=/var/www/facades
+    rm -rf "$facades_d"
+    local tgt=$facades_d
+    mkdir -m 755 -p "$(dirname "$tgt")" "$tgt"
+    cd "$files_d"
     local dirs
     if [[ -d ddl || -d plain ]]; then
 	tgt=$tgt/$facade_uri
-	dirs=( view plain ddl )
+        # view is historical for Artisans (slideshow and extremeperl)
+	dirs=( plain ddl )
         mkdir -p "$tgt"
     else
 	dirs=( $(find * -type d -prune -print) )
@@ -123,27 +155,33 @@ EOF
     (
         set -e
 	set -x
-        export BCONF=$build_dir/build.bconf
+        export BCONF=$build_d/build.bconf
         cat > "$BCONF" <<EOF
 use strict;
 use $app_root::BConf;
 $app_root::BConf->merge_dir({
     'Bivio::UI::Facade' => {
-        local_file_root => '$facades_dir',
+        local_file_root => '$facades_d',
     },
     'Bivio::Ext::DBI' => {
         connection => 'Bivio::SQL::Connection::None',
     },
 });
 EOF
-        PERLLIB=$build_dir bivio project link_facade_files
+        bivio project link_facade_files
     )
-    for facade in "$facades_dir"/*; do
+    for facade in "$facades_d"/*; do
         if [[ ! -L $facade ]]; then
             mkdir -p "$facade/plain"
-            ln -s "$javascript_dir" "$facade/plain/b"
+            ln -s "$javascript_d" "$facade/plain/b"
         fi
     done
+    if [[ $facade_uri == bivio.org ]]; then
+        (
+            cd "$facades_d"
+            ln -s bivio.org via.rob
+        )
+    fi
     # Apps mount subdirectories here so need to exist in the container
     (umask 022; mkdir -p /var/log /var/db /var/bkp /var/www/html)
 }
