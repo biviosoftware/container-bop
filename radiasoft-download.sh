@@ -100,7 +100,7 @@ EOF
     mv perl-"$root" "$root"
     local btest_d="/usr/share/btest"
     mkdir -p "$btest_d"
-    rsync -aRv $(find "$app_d" -name t -prune) "$btest_d"
+    rsync -aRv $(find "$root" -name t -prune) "$btest_d"
     perl -p -e "s{EXE_PREFIX}{$exe_prefix}g;s{ROOT}{$root}g" <<'EOF' > Makefile.PL
 use strict;
 require 5.005;
@@ -139,7 +139,7 @@ EOF
     local facades_d=/var/www/facades
     rm -rf "$facades_d"
     local tgt=$facades_d
-    mkdir -m 755 -p "$(dirname "$tgt")" "$tgt"
+    mkdir -p "$(dirname "$tgt")" "$tgt"
     cd "$files_d"
     local dirs
     if [[ -d ddl || -d plain ]]; then
