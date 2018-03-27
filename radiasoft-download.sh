@@ -97,15 +97,10 @@ EOF
     git clone "${flags[@]}" https://github.com/biviosoftware/perl-"$root" --depth 1
     mv perl-"$root" "$root"
     # POSTIT: radiasoft/rsconf/rsconf/component/btest.py
-    local btest_d="/usr/share/btest"
-    mkdir -p "$btest_d"
-    rsync -aR $(find "$root" -name t -prune) "$btest_d"
-    if [[ $root == Bivio ]]; then
-        # POSIT: radiasoft/rsconf/rsconf/package_data/btest/bivio.bconf.jinja
-        local src_d=/usr/share/Bivio-bOP-src
-        mkdir -p "$src_d"
-        rsync -aR "$root" "$src_d"
-    fi
+    local bop_d="/usr/src/bop"
+    mkdir -p "$bop_d"
+    cp -a "$root" "$bop_d"
+    chmod -R a+rX "$bop_d"
     perl -p -e "s{EXE_PREFIX}{$exe_prefix}g;s{ROOT}{$root}g" <<'EOF' > Makefile.PL
 use strict;
 require 5.005;
