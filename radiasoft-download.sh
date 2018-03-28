@@ -69,11 +69,6 @@ container_bop_build() {
     umask 022
     cd "$build_guest_conf"
     local build_d=$PWD
-    if [[ ! -e /usr/sbin/sendmail ]]; then
-        # Need a way of sending mail inside the container
-        install_yum_install mailx
-        ln -s -r /usr/bin/mailx /usr/sbin/sendmail
-    fi
     local javascript_d=/usr/share/Bivio-bOP-javascript
     local flags=()
     if [[ $root == Bivio ]]; then
