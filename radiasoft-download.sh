@@ -101,6 +101,12 @@ EOF
     mkdir -p "$bop_d"
     cp -a "$root" "$bop_d"
     chmod -R a+rX "$bop_d"
+    if [[ $root == Bivio ]]; then
+        # POSIT: radiasoft/rsconf/rsconf/component/bop.py
+        local src_d=/usr/share/Bivio-bOP-src
+        mkdir -m 755 -p "$src_d"
+        cp -a "$bop_d/$root" "$src_d"
+    fi
     perl -p -e "s{EXE_PREFIX}{$exe_prefix}g;s{ROOT}{$root}g" <<'EOF' > Makefile.PL
 use strict;
 require 5.005;
