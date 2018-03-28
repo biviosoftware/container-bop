@@ -69,6 +69,11 @@ container_bop_build() {
     umask 022
     cd "$build_guest_conf"
     local build_d=$PWD
+    if [[ ! -e /usr/sbin/sendmail ]]; then
+        # Need a way of sending mail inside the container
+        install_yum_install mailx
+        ln -s -r /usr/bin/mailx /usr/sbin/sendmail
+    fi
     local javascript_d=/usr/share/Bivio-bOP-javascript
     local flags=()
     if [[ $root == Bivio ]]; then
@@ -179,13 +184,13 @@ EOF
     for facade in "$facades_d"/*; do
         if [[ ! -L $facade ]]; then
             mkdir -p "$facade/plain"
-            ln -s "$javascript_d" "$facade/plain/b"
+            ln -s -r "$javascript_d" "$facade/plain/b"
         fi
     done
     if [[ $facade_uri == bivio.org ]]; then
         (
             cd "$facades_d"
-            ln -s bivio.org via.rob
+            ln -s -r bivio.org via.rob
         )
     fi
     # Apps mount subdirectories here so need to exist in the container
