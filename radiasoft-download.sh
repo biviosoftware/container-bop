@@ -115,7 +115,7 @@ use File::Find ();
 my($_EXE_FILES) = [];
 my($_PM) = {};
 File::Find::find(sub {
-    if (-d $_ && $_ =~ m#((^|/)(CVS|\.git|old|t)|-|\.old)$#) {
+    if (-d $_ && $_ =~ m#((^|/)(\.git|old|t)|-|\.old)$#) {
 	$File::Find::prune = 1;
 	return;
     }
@@ -151,6 +151,7 @@ EOF
     if [[ -d ddl || -d plain ]]; then
 	tgt=$tgt/$facade_uri
         # view is historical for Artisans (slideshow and extremeperl)
+        # so no need here.
 	dirs=( plain ddl )
         mkdir -p "$tgt"
     else
@@ -188,6 +189,12 @@ EOF
             ln -s -r bivio.org via.rob
         )
     fi
+may not be gaut
+need the list of files above
+/usr/bin/b-* bivio
+/usr/share/perl5/vendor_perl/Artisans
+/var/www/facades/*
+
     # Apps mount subdirectories here so need to exist in the container
     (umask 022; mkdir -p /var/log /var/db /var/bkp /var/www/html)
 }
