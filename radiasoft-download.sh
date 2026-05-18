@@ -24,9 +24,6 @@ container_bop_main() {
             exec_prefix=bo
             facade_uri=bivio.org
             ;;
-        Sensorimotor)
-            exec_prefix=sp
-            ;;
         Societas)
             exec_prefix=s
             ;;
